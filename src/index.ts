@@ -1,51 +1,97 @@
-import { buttonTransition, removeFirstMatch } from "./utils";
+import { Game } from "./game";
+import { buttonTransition, getRandomElements } from "./utils";
+import { WORDS } from "./words";
 
-const View = {
+const game = new Game(getRandomElements(WORDS, 6));
+
+const App = {
   $: {
     currentQuestion: document.querySelector("#current_question"),
     totalQuestions: document.querySelector("#total_questions"),
     answer: document.querySelector("#answer"),
     letters: document.querySelector("#letters"),
+    totalNoErrors: document.querySelector("#total_no_errors"),
+    totalErrors: document.querySelector("#total_errors"),
+    wordWithMaxErrors: document.querySelector("#word_with_max_errors"),
+    gameContainer: document.querySelector("#game"),
+    resultsContainer: document.querySelector("#results"),
   },
 
   setCurrentCount(count: number) {
-    View.$.currentQuestion.replaceChildren(String(count));
+    App.$.currentQuestion.replaceChildren(String(count));
   },
   setTotalQuestions(count: number) {
-    View.$.totalQuestions.replaceChildren(String(count));
+    App.$.totalQuestions.replaceChildren(String(count));
   },
+
+  setTotalNoErrors(count: number) {
+    App.$.totalNoErrors.replaceChildren(String(count));
+  },
+
+  setTotalErrors(count: number) {
+    App.$.totalErrors.replaceChildren(String(count));
+  },
+
+  setWordWithMaxErrors(word: string) {
+    App.$.wordWithMaxErrors.replaceChildren(word);
+  },
+
   addLetterToAnswer(letter: string) {
-    const length = View.$.answer.children.length;
-    View.$.answer.insertAdjacentHTML(
+    const length = App.$.answer.children.length;
+    App.$.answer.insertAdjacentHTML(
       "beforeend",
-      `<button type="button" class="btn btn-primary m-1" data-id=${
+      `<button type="button" class="btn btn-size btn-primary m-1" data-id=${
         letter + length
       } data-value=${letter}>${letter}</button>`
     );
-    const $new = View.$.answer.querySelector(`[data-id='${letter + length}']`);
+    const $new = App.$.answer.querySelector(`[data-id='${letter + length}']`);
     buttonTransition($new, "btn-success", "btn-primary");
   },
-  clearAnswer() {
-    View.$.answer.replaceChildren();
+  setErrorAnswer(letters: string[]) {
+    App.$.answer.replaceChildren();
+    App.$.answer.insertAdjacentHTML(
+      "afterbegin",
+      letters
+        .map(
+          (letter, i) =>
+            `<button type="button" data-value=${letter} class="btn btn-danger m-1">${letter}</button>`
+        )
+        .join("")
+    );
   },
-  setLetters(letters: string[]) {
-    View.$.letters.replaceChildren();
-    View.$.letters.insertAdjacentHTML(
+  setCorrectAnswer(letters: string[]) {
+    App.$.answer.replaceChildren();
+    App.$.answer.insertAdjacentHTML(
       "afterbegin",
       letters
         .map(
           (letter) =>
-            `<button type="button" data-value=${letter} class="btn btn-primary m-1">${letter}</button>`
+            `<button type="button" data-value=${letter} class="btn btn-success m-1">${letter}</button>`
+        )
+        .join("")
+    );
+  },
+  clearAnswer() {
+    App.$.answer.replaceChildren();
+  },
+  setLetters(letters: string[]) {
+    App.$.letters.replaceChildren();
+    App.$.letters.insertAdjacentHTML(
+      "afterbegin",
+      letters
+        .map(
+          (letter, i) =>
+            `<button type="button" data-index=${i} data-value=${letter} class="btn btn-primary m-1">${letter}</button>`
         )
         .join("")
     );
   },
   setLetterErrorStatus(letter: string, i?: number) {
     if (i) {
-      const $letter = View.$.letters.children[0];
+      const $letter = App.$.letters.children[i];
       buttonTransition($letter, "btn-primary", "btn-danger");
     } else {
-      const $letters = View.$.letters.querySelectorAll(
+      const $letters = App.$.letters.querySelectorAll(
         `[data-value='${letter}']`
       );
       $letters.forEach(($letter) => {
@@ -53,87 +99,108 @@ const View = {
       });
     }
   },
-};
 
-type GameStep = {
-  word: string;
-  answered: number;
-  letters: string[];
-  errors: number;
-  state: "finish" | "progress" | "fail";
-};
+  startNextStep() {
+    game.startNewStep();
+    App.renderStep();
+  },
 
-class Game {
-  words: string[];
-  history: GameStep[];
-  current: GameStep;
-  constructor(words: string[]) {
-    this.words = words;
-    this.history = [];
-    this.startNewStep();
-  }
+  renderStep() {
+    App.clearAnswer();
+    App.setCurrentCount(game.currentQuestion);
+    App.setTotalQuestions(game.totalQuestions);
+    App.setLetters(game.currentLetters);
 
-  startNewStep() {
-    const word = this.words.pop();
-    this.history.push(this.current);
-    this.current = {
-      word,
-      answered: 0,
-      letters: word.split("").sort(() => Math.random() - 0.5),
-      errors: 0,
-      state: "progress",
-    };
-  }
+    if (game.current.state === "finish") {
+      App.setCorrectAnswer(game.current.word.split(""));
+    }
 
-  pickLetter(letter: string, i?: number): boolean {
-    if (this.current.word[this.current.answered] === letter) {
-      this.current.answered += 1;
-      if (i) {
-        this.current.letters.splice(i, 1);
-      } else {
-        this.current.letters = removeFirstMatch(this.current.letters, letter);
+    if (game.current.state === "fail") {
+      App.setErrorAnswer(game.current.word.split(""));
+    }
+
+    if (game.current.state === "progress") {
+      App.setCorrectAnswer(
+        game.current.word.substring(0, game.current.answered).split("")
+      );
+    }
+  },
+
+  renderStats() {
+    App.$.gameContainer.classList.add("d-none");
+    App.$.resultsContainer.classList.remove("d-none");
+    App.setTotalNoErrors(game.wordsWithNoErrors);
+    App.setTotalErrors(game.totalErrors);
+    App.setWordWithMaxErrors(game.wordWithMaxErrors);
+  },
+
+  init() {
+    App.renderStep();
+    App.$.letters.addEventListener("click", (e) => {
+      const target = e.target as Element;
+      if (target.matches("[data-value]")) {
+        const dataValue = target.getAttribute("data-value");
+        const dataIndex = target.getAttribute("data-index");
+
+        game.pickLetter(dataValue, parseInt(dataIndex));
       }
-      return true;
-    }
-    this.current.errors += 1;
-    if (this.current.errors === 3) {
-      this.startNewStep();
-    }
-    if (this.current.answered === this.current.word.length) {
-      this.startNewStep();
-    }
-    return false;
-  }
+    });
 
-  get currentLetters() {
-    return this.current.letters;
-  }
-  get currentAnswer() {
-    return this.current.word.substring(0, this.current.answered);
-  }
-  get currentQuestion() {
-    return this.history.length;
-  }
-  get totalQuestions() {
-    return this.words.length;
-  }
-}
+    document.addEventListener("keydown", function (event) {
+      if (event.key.match(/^[a-zA-Z]$/)) {
+        game.pickLetter(event.key.toLowerCase());
+      }
+    });
 
-const WORDS = [
-  "apple",
-  "function",
-  "timeout",
-  "task",
-  "application",
-  "data",
-  "tragedy",
-  "sun",
-  "symbol",
-  "button",
-  "software",
-];
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "ArrowLeft") {
+        game.goBack();
+      }
+      if (event.key === "ArrowRight") {
+        game.goNext();
+      }
+    });
 
-// @ts-ignore
-window.appTest = View;
-// @ts-ignore
-window.game = new Game(WORDS);
+    game.addEventListener(
+      "picked",
+      (e: CustomEvent<{ letter: string; index?: number }>) => {
+        App.addLetterToAnswer(e.detail.letter);
+        App.setLetters(game.currentLetters);
+      }
+    );
+
+    game.addEventListener(
+      "wrong button",
+      (e: CustomEvent<{ letter: string; index?: number }>) => {
+        App.setLetterErrorStatus(e.detail.letter, e.detail.index);
+      }
+    );
+
+    game.addEventListener("step failed", (e) => {
+      App.setLetters([]);
+      App.setErrorAnswer(game.current.word.split(""));
+
+      setTimeout(() => {
+        App.startNextStep();
+      }, 650);
+    });
+
+    game.addEventListener("step finished", (e) => {
+      App.setLetters([]);
+      App.setCorrectAnswer(game.current.word.split(""));
+
+      setTimeout(() => {
+        if (game.isGameFinished) {
+          App.renderStats();
+        }
+        App.startNextStep();
+      }, 650);
+    });
+
+    game.addEventListener("change step", (e) => {
+      App.renderStep();
+    });
+  },
+};
+
+App.init();

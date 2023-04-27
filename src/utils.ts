@@ -20,3 +20,12 @@ export const buttonTransition = (
     $btn.classList.add(classFrom);
   }, 300);
 };
+
+export const getRandomElements = <T>(arr: T[], n: number): T[] => {
+  if (n > arr.length) {
+    throw new Error("n cannot be greater than the length of the array");
+  }
+
+  const shuffledArr = Array.from(arr).sort(() => Math.random() - 0.5);
+  return shuffledArr.slice(0, n);
+};
