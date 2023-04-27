@@ -8,7 +8,9 @@
     "start": "webpack serve",
     "build": "webpack",
     "prettier": "prettier --check .",
-    "prettier:fix": "prettier --write ."
+    "prettier:fix": "prettier --write .",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +22,7 @@
     "@babel/preset-env": "^7.21.4",
     "@babel/preset-typescript": "^7.21.4",
     "babel-loader": "^9.1.2",
+    "gh-pages": "^5.0.0",
     "html-webpack-plugin": "^5.5.1",
     "prettier": "^2.8.8",
     "ts-loader": "^9.4.2",
