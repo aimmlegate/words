@@ -54,7 +54,7 @@ const App = {
       letters
         .map(
           (letter, i) =>
-            `<button type="button" data-value=${letter} class="btn btn-danger m-1">${letter}</button>`
+            `<button type="button" data-value=${letter} class="btn btn-sizer btn-danger m-1">${letter}</button>`
         )
         .join("")
     );
@@ -66,7 +66,7 @@ const App = {
       letters
         .map(
           (letter) =>
-            `<button type="button" data-value=${letter} class="btn btn-success m-1">${letter}</button>`
+            `<button type="button" data-value=${letter} class="btn btn-sizer btn-success m-1">${letter}</button>`
         )
         .join("")
     );
@@ -81,7 +81,7 @@ const App = {
       letters
         .map(
           (letter, i) =>
-            `<button type="button" data-index=${i} data-value=${letter} class="btn btn-primary m-1">${letter}</button>`
+            `<button type="button" data-index=${i} data-value=${letter} class="btn btn-sizer btn-primary m-1">${letter}</button>`
         )
         .join("")
     );
@@ -103,6 +103,9 @@ const App = {
   startNextStep() {
     game.startNewStep();
     App.renderStep();
+    if (game.isGameFinished) {
+      App.renderStats();
+    }
   },
 
   renderStep() {
@@ -190,9 +193,6 @@ const App = {
       App.setCorrectAnswer(game.current.word.split(""));
 
       setTimeout(() => {
-        if (game.isGameFinished) {
-          App.renderStats();
-        }
         App.startNextStep();
       }, 650);
     });
@@ -202,5 +202,8 @@ const App = {
     });
   },
 };
+
+// @ts-ignore
+window.game = game;
 
 App.init();
