@@ -40,7 +40,7 @@ const App = {
     const length = App.$.answer.children.length;
     App.$.answer.insertAdjacentHTML(
       "beforeend",
-      `<button type="button" class="btn btn-size btn-primary m-1" data-id=${
+      `<button type="button" class="btn btn-sizer btn-primary m-1" data-id=${
         letter + length
       } data-value=${letter}>${letter}</button>`
     );
