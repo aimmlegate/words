@@ -203,7 +203,4 @@ const App = {
   },
 };
 
-// @ts-ignore
-window.game = game;
-
 App.init();
